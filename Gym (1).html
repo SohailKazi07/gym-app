@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<meta name="theme-color" content="#14101f">
+<title>Gym</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --radius: 14px;
+  }
+
+  [data-theme="violet"] {
+    --bg: #14101f; --surface: #1e1830; --surface-2: #271f3d; --surface-3: #322850;
+    --accent: #a855f7; --accent-2: #7c3aed; --accent-soft: rgba(168,85,247,.16);
+    --text: #f3effb; --text-dim: #b8aed0; --text-faint: #786d95;
+    --border: #362b54; --good: #34d399; --bad: #f87171; --warn: #fbbf24;
+    --good-soft: rgba(52,211,153,.16); --bad-soft: rgba(248,113,113,.16); --warn-soft: rgba(251,191,36,.18);
+  }
+  [data-theme="blaze"] {
+    --bg: #1a1210; --surface: #26180f; --surface-2: #331e11; --surface-3: #402614;
+    --accent: #ff6b35; --accent-2: #c1401f; --accent-soft: rgba(255,107,53,.16);
+    --text: #fbeee6; --text-dim: #d3ac97; --text-faint: #8f6e5d;
+    --border: #4a2c1a; --good: #7bd389; --bad: #ff5c5c; --warn: #ffb648;
+    --good-soft: rgba(123,211,137,.16); --bad-soft: rgba(255,92,92,.16); --warn-soft: rgba(255,182,72,.18);
+  }
+  [data-theme="deepsea"] {
+    --bg: #0d1b1e; --surface: #132a2e; --surface-2: #17363b; --surface-3: #1c4349;
+    --accent: #2dd4bf; --accent-2: #0e7c86; --accent-soft: rgba(45,212,191,.16);
+    --text: #e6fbf8; --text-dim: #9fc7c4; --text-faint: #628c8a;
+    --border: #1f4a4f; --good: #4ade80; --bad: #fb7185; --warn: #fbbf24;
+    --good-soft: rgba(74,222,128,.16); --bad-soft: rgba(251,113,133,.16); --warn-soft: rgba(251,191,36,.18);
+  }
+  [data-theme="concrete"] {
+    --bg: #f0efec; --surface: #ffffff; --surface-2: #f6f5f2; --surface-3: #eceae4;
+    --accent: #e63946; --accent-2: #b3212c; --accent-soft: rgba(230,57,70,.10);
+    --text: #1d1d1d; --text-dim: #55524d; --text-faint: #928d84;
+    --border: #ddd9d1; --good: #1e8e5a; --bad: #d63b3b; --warn: #b5860a;
+    --good-soft: rgba(30,142,90,.12); --bad-soft: rgba(214,59,59,.12); --warn-soft: rgba(181,134,10,.14);
+  }
+  [data-theme="blackout"] {
+    --bg: #0a0a0a; --surface: #141414; --surface-2: #1b1b1b; --surface-3: #232323;
+    --accent: #c6ff00; --accent-2: #8fb800; --accent-soft: rgba(198,255,0,.14);
+    --text: #f2f2f2; --text-dim: #a8a8a8; --text-faint: #6b6b6b;
+    --border: #2a2a2a; --good: #5fe08a; --bad: #ff5c5c; --warn: #ffcf40;
+    --good-soft: rgba(95,224,138,.14); --bad-soft: rgba(255,92,92,.14); --warn-soft: rgba(255,207,64,.16);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    padding-bottom: 78px;
+    transition: background .25s ease, color .25s ease;
+  }
+  .display { font-family: "Arial Black", Impact, "Helvetica Neue", sans-serif; letter-spacing: .01em; }
+  .mono { font-variant-numeric: tabular-nums; font-family: "SF Mono", "Courier New", monospace; }
+
+  /* ---------- Header ---------- */
+  header.top {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--bg);
+    padding: 16px 16px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .top-row { display:flex; align-items:center; justify-content:space-between; }
+  .brand { display:flex; align-items:center; gap:8px; }
+  .brand-mark {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; color:#fff; font-size:15px;
+  }
+  .brand-name { font-size: 17px; font-weight: 900; letter-spacing: .02em; }
+  .theme-picker { display:flex; gap:6px; }
+  .swatch {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid transparent; cursor: pointer;
+    background: linear-gradient(135deg, var(--sw1), var(--sw2));
+  }
+  .swatch.active { border-color: var(--text); }
+  .date-row {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top: 14px;
+  }
+  .date-row input[type=date] {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 8px 12px; font-size: 15px; font-weight: 700;
+  }
+  .progress-pill {
+    font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent);
+  }
+
+  /* ---------- Tabs content ---------- */
+  main { padding: 14px 14px 20px; max-width: 720px; margin: 0 auto; }
+  .hidden { display:none !important; }
+
+  /* ---------- Exercise card (Log tab) ---------- */
+  .ex-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .ex-card.status-good { border-left-color: var(--good); }
+  .ex-card.status-bad { border-left-color: var(--bad); }
+  .ex-card.status-warn { border-left-color: var(--warn); }
+  .ex-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ex-name { font-weight: 800; font-size: 14.5px; }
+  .ex-prev { font-size: 11.5px; color: var(--text-faint); }
+  .status-chip {
+    font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  .status-chip.good { background: var(--good-soft); color: var(--good); }
+  .status-chip.bad { background: var(--bad-soft); color: var(--bad); }
+  .status-chip.warn { background: var(--warn-soft); color: var(--warn); }
+
+  .steppers { display:flex; flex-direction: column; gap: 8px; }
+  .stepper { flex:1; }
+  .stepper-label { font-size: 10.5px; color: var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .stepper-row {
+    display:flex; align-items:stretch; background: var(--surface-2); border-radius: 10px; overflow:hidden; border: 1px solid var(--border);
+  }
+  .stepper-row button {
+    width: 38px; border: none; background: var(--surface-3); color: var(--text); font-size: 18px; font-weight: 900; cursor: pointer;
+  }
+  .stepper-row button:active { background: var(--accent-soft); color: var(--accent); }
+  .stepper-row input {
+    flex: 1; min-width: 0; border: none; background: transparent; color: var(--text);
+    text-align: center; font-size: 17px; font-weight: 800; -moz-appearance: textfield;
+  }
+  .stepper-row input::-webkit-outer-spin-button, .stepper-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin:0; }
+
+  .spark { margin-top: 8px; }
+
+  .notes-box {
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 12px 14px; margin-top: 4px;
+  }
+  .notes-box textarea {
+    width:100%; background: transparent; border:none; color:var(--text); font-size:14px;
+    resize: vertical; min-height: 44px; font-family: inherit;
+  }
+  .notes-box label { font-size: 11px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color: var(--text-faint); }
+
+  .save-bar { position: sticky; bottom: 78px; padding-top: 6px; }
+  .btn-save {
+    width:100%; padding: 14px; border:none; border-radius: 12px; font-size:15px; font-weight:900;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2)); color:#fff; cursor:pointer;
+    letter-spacing:.02em;
+  }
+  .btn-secondary {
+    width:100%; padding: 12px; border-radius: 12px; font-size:13.5px; font-weight:800;
+    background: var(--surface-2); color:var(--text-dim); border:1px solid var(--border); cursor:pointer; margin-top:8px;
+  }
+
+  /* ---------- History tab ---------- */
+  .hist-scroll { overflow-x: auto; border:1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+  table.hist { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.hist th, table.hist td { padding: 8px 10px; text-align:center; white-space:nowrap; border-bottom: 1px solid var(--border); }
+  table.hist th { background: var(--surface-2); font-weight:800; position: sticky; top:0; }
+  table.hist td.datecell { text-align:left; font-weight:800; color:var(--accent); position: sticky; left:0; background: var(--surface); }
+  table.hist th.datecell { position: sticky; left:0; z-index: 2; text-align:left; }
+  td.cell-good { background: var(--good-soft); color: var(--good); font-weight:800; }
+  td.cell-bad { background: var(--bad-soft); color: var(--bad); font-weight:800; }
+  td.cell-warn { background: var(--warn-soft); color: var(--warn); font-weight:800; }
+  .del-row-btn { background:none; border:none; color: var(--text-faint); cursor:pointer; font-size:14px; }
+
+  /* ---------- Graphs tab ---------- */
+  .select-row { display:flex; gap:8px; margin-bottom: 14px; }
+  select {
+    flex:1; background: var(--surface); color: var(--text); border:1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 14px; font-weight: 700;
+  }
+  .chart-card {
+    background: var(--surface); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; margin-bottom: 14px;
+  }
+  .chart-card h3 { margin: 0 0 10px; font-size: 13px; text-transform:uppercase; letter-spacing:.04em; color: var(--text-dim); }
+  .chart-wrap { height: 220px; position: relative; }
+
+  /* ---------- Settings tab ---------- */
+  .settings-row {
+    display:flex; align-items:center; gap:10px; background: var(--surface); border:1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px; margin-bottom:8px;
+  }
+  .reorder-btns { display:flex; flex-direction:column; gap:2px; }
+  .reorder-btn {
+    width: 22px; height: 18px; border:1px solid var(--border); background: var(--surface-2); color: var(--text-dim);
+    border-radius: 5px; font-size: 9px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .reorder-btn:disabled { opacity: .25; cursor: default; }
+  .reorder-btn:not(:disabled):active { color: var(--accent); border-color: var(--accent); }
+  .settings-row .drag-handle {
+    width: 28px; color: var(--text-faint); cursor: grab; user-select:none;
+    font-size: 18px; text-align:center; touch-action:none;
+  }
+  .settings-row.dragging { opacity:.45; transform:scale(.99); }
+  .settings-row.drag-over { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+  .settings-row .sname { flex:1; font-size: 13px; font-weight:700; }
+  .settings-row .name-input {
+    flex:1; min-width:120px; width:auto; text-align:left; font-weight:700;
+  }
+  .settings-row .delete-ex-btn {
+    width:30px; height:30px; border:1px solid var(--border); border-radius:8px;
+    background:var(--surface-2); color:var(--text-faint); cursor:pointer; font-size:16px;
+  }
+  .settings-row .delete-ex-btn:hover { color:var(--bad); border-color:var(--bad); }
+  .add-exercise-row { display:flex; gap:8px; margin-top:10px; }
+  .add-exercise-row input {
+    flex:1; min-width:0; background:var(--surface); color:var(--text);
+    border:1px solid var(--border); border-radius:10px; padding:11px 12px; font-size:13px;
+  }
+  .add-exercise-row button {
+    width:auto; padding:11px 16px; margin:0; border-radius:10px;
+  }
+  .settings-row input {
+    width: 64px; background: var(--surface-2); border:1px solid var(--border); border-radius:8px;
+    color: var(--text); padding: 8px; text-align:center; font-weight:800; font-size:13px;
+  }
+  .settings-row .slabel { font-size: 10px; color: var(--text-faint); text-align:center; margin-top:2px; }
+  .settings-note {
+    font-size: 12.5px; color: var(--text-dim); background: var(--surface); border:1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 14px; line-height:1.5;
+  }
+
+  /* ---------- Bottom tab bar ---------- */
+  nav.tabbar {
+    position: fixed; bottom:0; left:0; right:0; z-index: 30;
+    background: var(--surface); border-top: 1px solid var(--border);
+    display:flex; padding: 6px 8px calc(env(safe-area-inset-bottom, 0px) + 6px);
+  }
+  nav.tabbar button {
+    flex:1; background:none; border:none; color: var(--text-faint); padding: 8px 4px;
+    font-size: 10.5px; font-weight: 800; letter-spacing:.02em; cursor:pointer; text-transform:uppercase;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  nav.tabbar button .ic { font-size: 18px; }
+  nav.tabbar button.active { color: var(--accent); }
+
+  .empty-state { text-align:center; padding: 40px 20px; color: var(--text-faint); }
+  .empty-state .plate { font-size: 36px; margin-bottom: 10px; }
+
+  h2.section-title { font-size: 13px; text-transform:uppercase; letter-spacing:.06em; color: var(--text-faint); margin: 4px 2px 12px; font-weight:800; }
+</style>
+</head>
+<body data-theme="violet">
+
+<header class="top">
+  <div class="top-row">
+    <div class="brand">
+      <div class="brand-mark">◆</div>
+      <div class="brand-name display">GYM</div>
+    </div>
+    <div class="theme-picker" id="themePicker"></div>
+  </div>
+  <div class="date-row">
+    <input type="date" id="dateInput">
+    <span class="progress-pill mono" id="progressPill">-- / --</span>
+  </div>
+</header>
+
+<main>
+  <!-- LOG TAB -->
+  <section id="tab-log">
+    <div id="logCards"></div>
+    <div class="notes-box">
+      <label>Notes</label>
+      <textarea id="notesInput" placeholder="How'd it feel today?"></textarea>
+    </div>
+    <div class="save-bar">
+      <button class="btn-save" id="saveBtn">Save Session</button>
+      <button class="btn-secondary" id="clearFormBtn">Clear Form</button>
+    </div>
+  </section>
+
+  <!-- HISTORY TAB -->
+  <section id="tab-history" class="hidden">
+    <h2 class="section-title">Session History</h2>
+    <div id="historyWrap"></div>
+  </section>
+
+  <!-- GRAPHS TAB -->
+  <section id="tab-graphs" class="hidden">
+    <div class="select-row">
+      <select id="graphExercise"></select>
+    </div>
+    <div class="chart-card">
+      <h3>Weight</h3>
+      <div class="chart-wrap"><canvas id="chartWeight"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Progression Index</h3>
+      <div class="chart-wrap"><canvas id="chartIndex"></canvas></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS TAB -->
+  <section id="tab-settings" class="hidden">
+    <div class="settings-note">
+      <b>Progression Index</b> = Weight for reps ≤ 5. Beyond 5 reps (capped per exercise below): Index = Weight + Bonus × (min(Reps,Cap) − 5).
+      Set Bonus/Cap per exercise so hitting the cap stays just under your next real weight jump.
+    </div>
+    <div id="settingsList"></div>
+    <div class="add-exercise-row">
+      <input id="newExerciseName" type="text" maxlength="60" placeholder="New exercise name">
+      <button class="btn-secondary" id="addExerciseBtn">Add Exercise</button>
+    </div>
+    <button class="btn-secondary" id="seedBtn" style="margin-top:14px;">Add Sample Data</button>
+    <button class="btn-secondary" id="wipeSampleBtn">Clear Sample Data</button>
+  </section>
+</main>
+
+<nav class="tabbar">
+  <button class="tab-btn active" data-tab="log"><span class="ic">✎</span>Log</button>
+  <button class="tab-btn" data-tab="history"><span class="ic">▤</span>History</button>
+  <button class="tab-btn" data-tab="graphs"><span class="ic">∿</span>Graphs</button>
+  <button class="tab-btn" data-tab="settings"><span class="ic">⚙</span>Settings</button>
+</nav>
+
+<script>
+/* ============================== DATA MODEL ============================== */
+const EXERCISES = [
+  "Lat Pulldown","Pec Dec","Single Arm Tricep Extension (L)","Single Arm Tricep Extension (R)",
+  "Preacher Curl","Shoulder Press","Machine Side Delts (L)","Machine Side Delts (R)",
+  "Machine Side Delts (Bilateral)","Recline Curl (L)","Recline Curl (R)","Upper Back Row",
+  "Upper Chest","Tricep Dip Machine","Forearm Reverse Curls","Close Grip Row",
+  "Forearm Wrist Curls","Ab Crunch Machine","Obliques"
+];
+
+const DEFAULT_SETTINGS = {
+  "Lat Pulldown": {bonus:0.5, cap:9}, "Pec Dec": {bonus:1.0, cap:9},
+  "Single Arm Tricep Extension (L)": {bonus:0.25, cap:9}, "Single Arm Tricep Extension (R)": {bonus:0.25, cap:9},
+  "Preacher Curl": {bonus:0.5, cap:9}, "Shoulder Press": {bonus:0.5, cap:9},
+  "Machine Side Delts (L)": {bonus:0.25, cap:9}, "Machine Side Delts (R)": {bonus:0.25, cap:9},
+  "Machine Side Delts (Bilateral)": {bonus:0.25, cap:9},
+  "Recline Curl (L)": {bonus:0.5, cap:9}, "Recline Curl (R)": {bonus:0.5, cap:9},
+  "Upper Back Row": {bonus:1.0, cap:9}, "Upper Chest": {bonus:0.25, cap:9},
+  "Tricep Dip Machine": {bonus:1.0, cap:9}, "Forearm Reverse Curls": {bonus:0.25, cap:9},
+  "Close Grip Row": {bonus:1.0, cap:9}, "Forearm Wrist Curls": {bonus:1.0, cap:9},
+  "Ab Crunch Machine": {bonus:1.0, cap:9}, "Obliques": {bonus:1.0, cap:9},
+};
+
+const STACKS = {}; // stack = bonus * 5, used for sample-data generation only
+EXERCISES.forEach(ex => STACKS[ex] = DEFAULT_SETTINGS[ex].bonus * 5);
+
+let state = {
+  sessions: [],   // [{date, entries:{ex:[w,r]}, notes, sample:bool}]
+  settings: {},   // {ex:{bonus,cap}}
+  theme: "violet",
+  order: [],      // custom exercise order
+};
+
+function orderedExercises() {
+  return Array.isArray(state.order) && state.order.length
+    ? state.order
+    : [...EXERCISES];
+}
+
+const THEMES = [
+  {id:"violet", sw1:"#a855f7", sw2:"#7c3aed"},
+  {id:"blaze", sw1:"#ff6b35", sw2:"#c1401f"},
+  {id:"deepsea", sw1:"#2dd4bf", sw2:"#0e7c86"},
+  {id:"concrete", sw1:"#e63946", sw2:"#f0efec"},
+  {id:"blackout", sw1:"#c6ff00", sw2:"#0a0a0a"},
+];
+
+/* ============================== STORAGE ============================== */
+async function loadState() {
+  try {
+    const raw = localStorage.getItem("gym-state-v2");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.sessions = parsed.sessions || [];
+      state.settings = parsed.settings || {};
+      state.theme = parsed.theme || "violet";
+      state.order = parsed.order || [];
+    }
+  } catch (e) { /* no saved state yet -- fresh start */ }
+  // Keep the built-in exercises available, while allowing custom exercises to persist.
+  EXERCISES.forEach(ex => { if (!state.settings[ex]) state.settings[ex] = {...DEFAULT_SETTINGS[ex]}; });
+  if (!Array.isArray(state.order) || !state.order.length) state.order = [...EXERCISES];
+  const known = new Set([...EXERCISES, ...Object.keys(state.settings)]);
+  state.order = state.order.filter(ex => known.has(ex));
+  Object.keys(state.settings).forEach(ex => { if (!state.order.includes(ex)) state.order.push(ex); });
+  await saveState();
+}
+
+async function saveState() {
+  try {
+    localStorage.setItem("gym-state-v2", JSON.stringify(state));
+  } catch (e) { console.error("save failed", e); }
+}
+
+/* ============================== INDEX MATH ============================== */
+function computeIndex(ex, weight, reps) {
+  if (weight == null || reps == null || weight === "" || reps === "") return null;
+  const {bonus, cap} = state.settings[ex];
+  const effReps = Math.min(reps, cap);
+  if (effReps <= 5) return weight;
+  return weight + bonus * (effReps - 5);
+}
+
+function sortedSessions() {
+  return [...state.sessions].sort((a,b) => a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+}
+
+function prevValueFor(ex, beforeDate) {
+  const sess = sortedSessions().filter(s => s.date < beforeDate && s.entries[ex]);
+  if (sess.length === 0) return null;
+  return sess[sess.length - 1].entries[ex];
+}
+
+function statusFor(cur, prev) {
+  if (!prev || !cur) return null;
+  const [cw, cr] = cur, [pw, pr] = prev;
+  if (cw === pw && cr === pr) return null; // white/neutral
+  if (cw >= pw && cr >= pr && (cw > pw || cr > pr)) return "good";
+  if (cw <= pw && cr <= pr && (cw < pw || cr < pr)) return "bad";
+  return "warn";
+}
+
+/* ============================== UI STATE ============================== */
+let formEntries = {}; // ex -> [w, r] for the currently-open log form
+let charts = {};
+
+function fmtDate(d) {
+  const dt = new Date(d + "T00:00:00");
+  return dt.toLocaleDateString(undefined, {month:"short", day:"numeric"});
+}
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+/* ---------- Theme picker ---------- */
+function renderThemePicker() {
+  const el = document.getElementById("themePicker");
+  el.innerHTML = "";
+  THEMES.forEach(t => {
+    const b = document.createElement("div");
+    b.className = "swatch" + (state.theme === t.id ? " active" : "");
+    b.style.setProperty("--sw1", t.sw1);
+    b.style.setProperty("--sw2", t.sw2);
+    b.title = t.id;
+    b.onclick = () => { state.theme = t.id; document.body.setAttribute("data-theme", t.id); renderThemePicker(); saveState(); renderGraphs(); };
+    el.appendChild(b);
+  });
+}
+
+/* ---------- Sparkline (inline svg, last 6 index values) ---------- */
+function sparkline(values) {
+  if (values.length < 2) return "";
+  const w = 100, h = 26, pad = 3;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+  const pts = values.map((v,i) => {
+    const x = pad + (i/(values.length-1)) * (w - pad*2);
+    const y = h - pad - ((v-min)/range) * (h - pad*2);
+    return `${x},${y}`;
+  }).join(" ");
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+/* ---------- Log tab ---------- */
+function renderLogCards() {
+  const date = document.getElementById("dateInput").value;
+  const wrap = document.getElementById("logCards");
+  wrap.innerHTML = "";
+
+  orderedExercises().forEach(ex => {
+    const prev = prevValueFor(ex, date);
+    const cur = formEntries[ex] || [null, null];
+    const st = statusFor(cur[0] != null && cur[1] != null ? cur : null, prev);
+
+    const card = document.createElement("div");
+    card.className = "ex-card" + (st ? ` status-${st}` : "");
+    card.dataset.ex = ex;
+
+    const histVals = sortedSessions().filter(s => s.entries[ex]).slice(-6).map(s => computeIndex(ex, s.entries[ex][0], s.entries[ex][1]));
+
+    card.innerHTML = `
+      <div class="ex-top">
+        <div>
+          <div class="ex-name">${ex}</div>
+          <div class="ex-prev">${prev ? `Last: ${prev[0]}\u00d7${prev[1]}` : "No history yet"}</div>
+        </div>
+        <div class="status-chip" ${st ? "" : 'style="display:none"'}></div>
+      </div>
+      <div class="steppers">
+        <div class="stepper">
+          <div class="stepper-label">Weight</div>
+          <div class="stepper-row">
+            <button data-act="w-" data-ex="${ex}">\u2212</button>
+            <input type="number" inputmode="decimal" data-field="w" data-ex="${ex}" value="${cur[0] ?? ""}" placeholder="\u2014">
+            <button data-act="w+" data-ex="${ex}">+</button>
+          </div>
+        </div>
+        <div class="stepper">
+          <div class="stepper-label">Reps</div>
+          <div class="stepper-row">
+            <button data-act="r-" data-ex="${ex}">\u2212</button>
+            <input type="number" inputmode="numeric" data-field="r" data-ex="${ex}" value="${cur[1] ?? ""}" placeholder="\u2014">
+            <button data-act="r+" data-ex="${ex}">+</button>
+          </div>
+        </div>
+      </div>
+      ${histVals.length >= 2 ? sparkline(histVals) : ""}
+    `;
+    wrap.appendChild(card);
+    updateCardStatusVisual(ex);
+  });
+
+  updateProgressPill();
+
+  // wire steppers + inputs
+  wrap.querySelectorAll("button[data-act]").forEach(btn => {
+    btn.onclick = () => {
+      const ex = btn.dataset.ex, act = btn.dataset.act;
+      const stepW = state.settings[ex].bonus * 5 || 2.5;
+      let [w, r] = formEntries[ex] || [null, null];
+      if (act === "w-") w = (w ?? 0) - stepW;
+      if (act === "w+") w = (w ?? 0) + stepW;
+      if (act === "r-") r = Math.max(0, (r ?? 0) - 1);
+      if (act === "r+") r = (r ?? 0) + 1;
+      formEntries[ex] = [w, r];
+      renderLogCards();
+    };
+  });
+  wrap.querySelectorAll("input[data-field]").forEach(inp => {
+    inp.oninput = () => {
+      const ex = inp.dataset.ex, field = inp.dataset.field;
+      const [w, r] = formEntries[ex] || [null, null];
+      const val = inp.value === "" ? null : parseFloat(inp.value);
+      formEntries[ex] = field === "w" ? [val, r] : [w, val];
+      updateCardStatusVisual(ex);
+      updateProgressPill();
+    };
+  });
+}
+
+function updateCardStatusVisual(ex) {
+  const date = document.getElementById("dateInput").value;
+  const card = document.querySelector(`.ex-card[data-ex="${CSS.escape(ex)}"]`);
+  if (!card) return;
+  const prev = prevValueFor(ex, date);
+  const cur = formEntries[ex] || [null, null];
+  const st = statusFor(cur[0] != null && cur[1] != null ? cur : null, prev);
+  card.className = "ex-card" + (st ? ` status-${st}` : "");
+  const chip = card.querySelector(".status-chip");
+  if (st) {
+    chip.style.display = "";
+    chip.className = `status-chip ${st}`;
+    chip.textContent = st === "good" ? "Up" : st === "bad" ? "Down" : "Mixed";
+  } else {
+    chip.style.display = "none";
+  }
+}
+
+function updateProgressPill() {
+  let progressed = 0, attempted = 0;
+  const date = document.getElementById("dateInput").value;
+  orderedExercises().forEach(ex => {
+    const cur = formEntries[ex] || [null, null];
+    if (cur[0] != null && cur[1] != null) {
+      attempted++;
+      const prev = prevValueFor(ex, date);
+      const st = statusFor(cur, prev);
+      if (st === "good") progressed++;
+    }
+  });
+  document.getElementById("progressPill").textContent = attempted ? `${progressed} / ${attempted} up` : "-- / --";
+}
+
+function loadFormForDate(date) {
+  const existing = state.sessions.find(s => s.date === date);
+  formEntries = {};
+  if (existing) {
+    orderedExercises().forEach(ex => { formEntries[ex] = existing.entries[ex] ? [...existing.entries[ex]] : [null, null]; });
+    document.getElementById("notesInput").value = existing.notes || "";
+  } else {
+    orderedExercises().forEach(ex => formEntries[ex] = [null, null]);
+    document.getElementById("notesInput").value = "";
+  }
+  renderLogCards();
+}
+
+async function saveSession() {
+  const date = document.getElementById("dateInput").value;
+  if (!date) { alert("Pick a date first."); return; }
+  const entries = {};
+  orderedExercises().forEach(ex => {
+    const [w, r] = formEntries[ex] || [null, null];
+    if (w != null && r != null && w !== "" && r !== "") entries[ex] = [w, r];
+  });
+  if (Object.keys(entries).length === 0) { alert("Log at least one exercise."); return; }
+  const notes = document.getElementById("notesInput").value;
+  const idx = state.sessions.findIndex(s => s.date === date);
+  const record = {date, entries, notes, sample:false};
+  if (idx >= 0) state.sessions[idx] = record; else state.sessions.push(record);
+  await saveState();
+  renderAll();
+  const btn = document.getElementById("saveBtn");
+  const orig = btn.textContent;
+  btn.textContent = "Saved \u2713";
+  setTimeout(() => btn.textContent = orig, 1200);
+}
+
+/* ---------- History tab ---------- */
+function renderHistory() {
+  const wrap = document.getElementById("historyWrap");
+  const sess = sortedSessions();
+  if (sess.length === 0) {
+    wrap.innerHTML = `<div class="empty-state"><div class="plate">\u25c9</div>No sessions logged yet.</div>`;
+    return;
+  }
+  let head = `<tr><th class="datecell">Date</th>`;
+  orderedExercises().forEach(ex => head += `<th>${ex.replace(/ \(.*\)/,"")}</th>`);
+  head += `<th></th></tr>`;
+
+  let rows = "";
+  sess.forEach(s => {
+    rows += `<tr><td class="datecell">${fmtDate(s.date)}</td>`;
+    orderedExercises().forEach(ex => {
+      const cur = s.entries[ex];
+      if (!cur) { rows += `<td>\u2014</td>`; return; }
+      const prev = prevValueFor(ex, s.date);
+      const st = statusFor(cur, prev);
+      const cls = st ? `cell-${st === "good" ? "good" : st === "bad" ? "bad" : "warn"}` : "";
+      rows += `<td class="${cls}">${cur[0]}\u00d7${cur[1]}</td>`;
+    });
+    rows += `<td><button class="del-row-btn" data-date="${s.date}">\u2715</button></td></tr>`;
+  });
+
+  wrap.innerHTML = `<div class="hist-scroll"><table class="hist"><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+  wrap.querySelectorAll(".del-row-btn").forEach(b => {
+    b.onclick = async () => {
+      if (!confirm("Delete this session?")) return;
+      state.sessions = state.sessions.filter(s => s.date !== b.dataset.date);
+      await saveState();
+      renderAll();
+    };
+  });
+}
+
+/* ---------- Graphs tab ---------- */
+function graphPairFor(ex) {
+  const m = ex.match(/^(.*) \(([LR])\)$/);
+  if (!m) return [ex];
+  const base = m[1], side = m[2];
+  const other = `${base} (${side === "L" ? "R" : "L"})`;
+  return orderedExercises().includes(other) ? [`${base} (L)`, `${base} (R)`] : [ex];
+}
+
+function renderGraphSelect() {
+  const sel = document.getElementById("graphExercise");
+  const prevVal = sel.value;
+  sel.innerHTML = "";
+  orderedExercises().forEach(ex => {
+    const o = document.createElement("option");
+    o.value = ex; o.textContent = ex;
+    sel.appendChild(o);
+  });
+  if (prevVal && orderedExercises().includes(prevVal)) sel.value = prevVal;
+  sel.onchange = renderGraphs;
+}
+
+function niceScale(values) {
+  if (values.length === 0) return {min:0, max:10};
+  const min = Math.min(...values), max = Math.max(...values);
+  const pad = Math.max((max - min) * 0.15, 1);
+  return {min: Math.floor((min - pad)*10)/10, max: Math.ceil((max + pad)*10)/10};
+}
+
+function accentColor() {
+  return getComputedStyle(document.body).getPropertyValue("--accent").trim();
+}
+
+function buildLineChart(canvasId, labels, datasets) {
+  const ctx = document.getElementById(canvasId).getContext("2d");
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  const allValues = datasets.flatMap(d => d.data.filter(v => v != null));
+  const scale = niceScale(allValues);
+  const accent = accentColor();
+  const sideColors = [accent, getComputedStyle(document.body).getPropertyValue("--good").trim()];
+
+  charts[canvasId] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: datasets.map((d, i) => {
+        const color = sideColors[i] || accent;
+        return {
+          label: d.label,
+          data: d.data,
+          borderColor: color,
+          backgroundColor: color + "22",
+          pointBackgroundColor: color,
+          pointRadius: 4,
+          tension: .25,
+          fill: false,
+          spanGaps: true
+        };
+      })
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: datasets.length > 1, labels: {
+        color: getComputedStyle(document.body).getPropertyValue("--text-dim").trim()
+      }}},
+      scales: {
+        y: {
+          min: scale.min, max: scale.max,
+          grid: { color: "rgba(128,128,128,.15)" },
+          ticks: { color: getComputedStyle(document.body).getPropertyValue("--text-dim") }
+        },
+        x: {
+          grid: { display:false },
+          ticks: { color: getComputedStyle(document.body).getPropertyValue("--text-dim") }
+        }
+      }
+    }
+  });
+}
+
+function renderGraphs() {
+  renderGraphSelect();
+  const ex = document.getElementById("graphExercise").value || orderedExercises()[0];
+  const pair = graphPairFor(ex);
+  const sess = sortedSessions();
+  const relevant = sess.filter(s => pair.some(name => s.entries[name]));
+  const labels = relevant.map(s => fmtDate(s.date));
+
+  const weightSets = pair.map(name => ({
+    label: name,
+    data: relevant.map(s => s.entries[name] ? s.entries[name][0] : null)
+  }));
+  const indexSets = pair.map(name => ({
+    label: name,
+    data: relevant.map(s => s.entries[name]
+      ? computeIndex(name, s.entries[name][0], s.entries[name][1])
+      : null)
+  }));
+
+  buildLineChart("chartWeight", labels, weightSets);
+  buildLineChart("chartIndex", labels, indexSets);
+}
+
+/* ---------- Settings tab ---------- */
+function migrateExerciseName(oldName, newName) {
+  if (!newName || oldName === newName || orderedExercises().includes(newName)) return false;
+
+  // Move settings and every historical entry to the new name.
+  state.settings[newName] = state.settings[oldName] || {bonus:1, cap:9};
+  delete state.settings[oldName];
+
+  state.sessions.forEach(s => {
+    if (Object.prototype.hasOwnProperty.call(s.entries, oldName)) {
+      if (!Object.prototype.hasOwnProperty.call(s.entries, newName)) {
+        s.entries[newName] = s.entries[oldName];
+      }
+      delete s.entries[oldName];
+    }
+  });
+
+  state.order = orderedExercises().map(ex => ex === oldName ? newName : ex);
+  if (formEntries[oldName] !== undefined) {
+    formEntries[newName] = formEntries[oldName];
+    delete formEntries[oldName];
+  }
+  return true;
+}
+
+async function renameExercise(oldName, input) {
+  const newName = input.value.trim();
+  if (!newName) { input.value = oldName; return; }
+  if (newName === oldName) return;
+  if (!migrateExerciseName(oldName, newName)) {
+    alert("An exercise with that name already exists.");
+    input.value = oldName;
+    return;
+  }
+  await saveState();
+  renderAll();
+}
+
+async function deleteExercise(ex) {
+  if (!confirm(`Remove "${ex}"? This removes it from the exercise list and deletes its saved history for this exercise.`)) return;
+  state.order = orderedExercises().filter(name => name !== ex);
+  delete state.settings[ex];
+  state.sessions.forEach(s => { delete s.entries[ex]; });
+  delete formEntries[ex];
+  await saveState();
+  renderAll();
+}
+
+async function addExercise() {
+  const input = document.getElementById("newExerciseName");
+  const name = input.value.trim();
+  if (!name) return;
+  if (orderedExercises().includes(name)) {
+    alert("That exercise already exists.");
+    return;
+  }
+  state.order = [...orderedExercises(), name];
+  state.settings[name] = {bonus:1, cap:9};
+  input.value = "";
+  await saveState();
+  renderAll();
+}
+
+function wireSettingsDragDrop() {
+  const wrap = document.getElementById("settingsList");
+  let dragged = null;
+
+  wrap.querySelectorAll(".settings-row").forEach(row => {
+    row.addEventListener("dragstart", e => {
+      dragged = row;
+      row.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", row.dataset.ex);
+    });
+
+    row.addEventListener("dragend", async () => {
+      if (!dragged) return;
+      dragged.classList.remove("dragging");
+      wrap.querySelectorAll(".settings-row").forEach(r => r.classList.remove("drag-over"));
+      const ord = [...wrap.querySelectorAll(".settings-row")].map(r => r.dataset.ex);
+      state.order = ord;
+      dragged = null;
+      await saveState();
+      renderAll();
+    });
+
+    row.addEventListener("dragover", e => {
+      e.preventDefault();
+      if (dragged && dragged !== row) row.classList.add("drag-over");
+    });
+
+    row.addEventListener("dragleave", () => row.classList.remove("drag-over"));
+
+    row.addEventListener("drop", e => {
+      e.preventDefault();
+      if (!dragged || dragged === row) return;
+      const rect = row.getBoundingClientRect();
+      const after = e.clientY > rect.top + rect.height / 2;
+      if (after) row.after(dragged);
+      else row.before(dragged);
+      row.classList.remove("drag-over");
+    });
+  });
+}
+
+function renderSettings() {
+  const wrap = document.getElementById("settingsList");
+  wrap.innerHTML = "";
+
+  orderedExercises().forEach((ex, i) => {
+    const s = state.settings[ex] || {bonus:1, cap:9};
+    const row = document.createElement("div");
+    row.className = "settings-row";
+    row.draggable = true;
+    row.dataset.ex = ex;
+    row.innerHTML = `
+      <div class="drag-handle" title="Drag to reorder">☷</div>
+      <input class="name-input" type="text" maxlength="60" value="${ex.replace(/"/g, "&quot;")}" data-ex="${ex.replace(/"/g, "&quot;")}">
+      <div>
+        <input type="number" step="0.05" value="${s.bonus}" data-ex="${ex}" data-field="bonus">
+        <div class="slabel">Bonus</div>
+      </div>
+      <div>
+        <input type="number" step="1" value="${s.cap}" data-ex="${ex}" data-field="cap">
+        <div class="slabel">Cap</div>
+      </div>
+      <button class="delete-ex-btn" title="Remove exercise" data-ex="${ex}">×</button>
+    `;
+    wrap.appendChild(row);
+  });
+
+  wrap.querySelectorAll(".name-input").forEach(inp => {
+    inp.onchange = () => renameExercise(inp.dataset.ex, inp);
+    inp.onkeydown = e => { if (e.key === "Enter") inp.blur(); };
+  });
+
+  wrap.querySelectorAll('input[data-field]').forEach(inp => {
+    inp.onchange = async () => {
+      const ex = inp.dataset.ex, field = inp.dataset.field;
+      if (!state.settings[ex]) state.settings[ex] = {bonus:1, cap:9};
+      state.settings[ex][field] = parseFloat(inp.value);
+      await saveState();
+      renderAll();
+    };
+  });
+
+  wrap.querySelectorAll(".delete-ex-btn").forEach(btn => {
+    btn.onclick = () => deleteExercise(btn.dataset.ex);
+  });
+
+  wireSettingsDragDrop();
+}
+
+/* ---------- Sample data ---------- */
+async function addSampleData() {
+  const stacks = STACKS;
+  let stateLocal = {};
+  EXERCISES.forEach(ex => {
+    const last = sortedSessions().filter(s => s.entries[ex]).slice(-1)[0];
+    stateLocal[ex] = last ? [...last.entries[ex]] : [45, 6];
+  });
+  let d = new Date("2026-07-13T00:00:00");
+  for (let i = 0; i < 14; i++) {
+    const dateStr = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    const entries = {};
+    EXERCISES.forEach(ex => {
+      let [w, r] = stateLocal[ex];
+      r += [-1,0,0,1,1][Math.floor(Math.random()*5)];
+      r = Math.max(5, Math.min(r, 10));
+      if (r >= 9 && Math.random() < 0.6) { w += stacks[ex]; r = Math.random() < .5 ? 5 : 6; }
+      w = Math.round(w*2)/2;
+      stateLocal[ex] = [w, r];
+      entries[ex] = [w, r];
+    });
+    if (!state.sessions.find(s => s.date === dateStr)) {
+      state.sessions.push({date: dateStr, entries, notes:"", sample:true});
+    }
+    d.setDate(d.getDate() + (Math.random() < .5 ? 2 : 3));
+  }
+  await saveState();
+  renderAll();
+}
+
+async function clearSampleData() {
+  state.sessions = state.sessions.filter(s => !s.sample);
+  await saveState();
+  renderAll();
+}
+
+/* ============================== TAB SWITCHING ============================== */
+function switchTab(tab) {
+  ["log","history","graphs","settings"].forEach(t => {
+    document.getElementById("tab-" + t).classList.toggle("hidden", t !== tab);
+  });
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  if (tab === "log") renderLogCards();
+  if (tab === "history") renderHistory();
+  if (tab === "graphs") renderGraphs();
+  if (tab === "settings") renderSettings();
+}
+
+/* ============================== INIT ============================== */
+function renderAll() {
+  renderThemePicker();
+  loadFormForDate(document.getElementById("dateInput").value);
+  const activeTab = document.querySelector(".tab-btn.active")?.dataset.tab || "log";
+  if (activeTab === "history") renderHistory();
+  if (activeTab === "graphs") renderGraphs();
+  if (activeTab === "settings") renderSettings();
+}
+
+async function init() {
+  await loadState();
+  document.body.setAttribute("data-theme", state.theme);
+  document.getElementById("dateInput").value = todayStr();
+  document.getElementById("dateInput").onchange = (e) => loadFormForDate(e.target.value);
+  document.getElementById("saveBtn").onclick = saveSession;
+  document.getElementById("clearFormBtn").onclick = () => loadFormForDate(document.getElementById("dateInput").value);
+  document.getElementById("seedBtn").onclick = addSampleData;
+  document.getElementById("wipeSampleBtn").onclick = clearSampleData;
+  document.getElementById("addExerciseBtn").onclick = addExercise;
+  document.getElementById("newExerciseName").onkeydown = e => { if (e.key === "Enter") addExercise(); };
+  document.querySelectorAll(".tab-btn").forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
