@@ -18,7 +18,7 @@ Set	Index
 30×12	32 (capped at 9 reps)
 
 I confirmed those numbers by running the formula directly. The green/red colors and the graphs use the same function, so they follow the new rule automatically. I also updated the explanation text in the Settings tab.
-Export/import backup for exercises
+add these: Export/import backup for exercises
 automatically it in all sections without needing to click save progress
 Plateau flag (havent progressed in 2+ sessions on an exercise)
 Overview tab/page
