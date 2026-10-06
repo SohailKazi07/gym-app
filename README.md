@@ -32,7 +32,7 @@ protein intake daily tracker+ graph
 volume per muscle group stat
 personal exercise records stats
 also make it so i can have a toggle to choose bilaterial exercises to be displayed tg on the graph
-make the app visually better meaning the backgrounds, make it not js one color ifykwim make it a cooler bg
+make the app visually better meaning the backgrounds, make it not js one color ifykwim make it a cooler bg, overall js make the app ui 10x better, also if u want add convenience+useful features as u please, ty
 organize these new features as u see fit with new pages/whatnot, make sure all the graphs work propertly pls and ty
 here is the anterior order+settings
 top half shoulder press 0.5
